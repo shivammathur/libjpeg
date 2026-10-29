@@ -30,16 +30,6 @@
  * of the library and the SIMD implementations.
  */
 
-/* Winlibs: Read SIMD overrides from the Windows process environment.  This
- * avoids repeated CRT environment scans and supports PHP ZTS putenv().
- */
-#if defined(_WIN32) && !defined(NO_GETENV)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-#endif
-
 #include "jsimddct.h"
 #include "jsimd.h"
 #include "jsimdint.h"
@@ -52,16 +42,6 @@
  * Repeating CPUID for every image is particularly costly in Windows VMs.
  */
 static volatile long winlibs_cpu_support = (long)JSIMD_UNDEFINED;
-#endif
-
-#ifndef NO_GETENV
-#ifdef _WIN32
-#define SIMD_ENV_ENABLED(name) \
-  (GetEnvironmentVariableA(name, env, sizeof(env)) == 1 && env[0] == '1')
-#else
-#define SIMD_ENV_ENABLED(name) \
-  (!GETENV_S(env, sizeof(env), name) && !strcmp(env, "1"))
-#endif
 #endif
 
 #if SIMD_ARCHITECTURE == X86_64 || SIMD_ARCHITECTURE == I386
@@ -113,33 +93,33 @@ init_simd(j_common_ptr cinfo)
 #ifndef NO_GETENV
   /* Force different settings through environment variables */
 #if SIMD_ARCHITECTURE == X86_64 || SIMD_ARCHITECTURE == I386
-  if (SIMD_ENV_ENABLED("JSIMD_FORCESSE2"))
+  if (!GETENV_S(env, 2, "JSIMD_FORCESSE2") && !strcmp(env, "1"))
     simd_support &= JSIMD_SSE2 | JSIMD_SSE;
 #if SIMD_ARCHITECTURE == I386
-  if (SIMD_ENV_ENABLED("JSIMD_FORCESSE"))
+  if (!GETENV_S(env, 2, "JSIMD_FORCESSE") && !strcmp(env, "1"))
     simd_support &= JSIMD_SSE | JSIMD_MMX;
-  if (SIMD_ENV_ENABLED("JSIMD_FORCEMMX"))
+  if (!GETENV_S(env, 2, "JSIMD_FORCEMMX") && !strcmp(env, "1"))
     simd_support &= JSIMD_MMX;
-  if (SIMD_ENV_ENABLED("JSIMD_FORCE3DNOW"))
+  if (!GETENV_S(env, 2, "JSIMD_FORCE3DNOW") && !strcmp(env, "1"))
     simd_support &= JSIMD_3DNOW | JSIMD_MMX;
 #endif
 #elif SIMD_ARCHITECTURE == ARM
-  if (SIMD_ENV_ENABLED("JSIMD_FORCENEON"))
+  if (!GETENV_S(env, 2, "JSIMD_FORCENEON") && !strcmp(env, "1"))
     simd_support = JSIMD_NEON;
 #elif SIMD_ARCHITECTURE == RISCV64
-  if (SIMD_ENV_ENABLED("JSIMD_FORCERVV"))
+  if (!GETENV_S(env, 2, "JSIMD_FORCERVV") && !strcmp(env, "1"))
     simd_support = JSIMD_RVV;
 #elif SIMD_ARCHITECTURE == MIPS64
-  if (SIMD_ENV_ENABLED("JSIMD_FORCEMMI"))
+  if (!GETENV_S(env, 2, "JSIMD_FORCEMMI") && !strcmp(env, "1"))
     simd_support = JSIMD_MMI;
 #endif
-  if (SIMD_ENV_ENABLED("JSIMD_FORCENONE"))
+  if (!GETENV_S(env, 2, "JSIMD_FORCENONE") && !strcmp(env, "1"))
     simd_support = 0;
 #ifdef WITH_SIMDE
-  if (SIMD_ENV_ENABLED("JSIMD_HUFFENC"))
+  if (!GETENV_S(env, 2, "JSIMD_HUFFENC") && !strcmp(env, "1"))
     simd_huffman = 1;
 #else
-  if (SIMD_ENV_ENABLED("JSIMD_NOHUFFENC"))
+  if (!GETENV_S(env, 2, "JSIMD_NOHUFFENC") && !strcmp(env, "1"))
     simd_huffman = 0;
 #endif
 #endif
